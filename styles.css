@@ -1,0 +1,155 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.drop-zone {
+  background: white;
+  border: 3px dashed #cbd5e0;
+  border-radius: 12px;
+  padding: 60px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.drop-zone:hover {
+  border-color: #667eea;
+  background: #f7fafc;
+}
+
+.drop-zone.drag-over {
+  border-color: #667eea;
+  background: #edf2f7;
+  transform: scale(1.02);
+}
+
+.drop-zone-content {
+  pointer-events: none;
+}
+
+.drop-icon {
+  width: 64px;
+  height: 64px;
+  color: #667eea;
+  margin-bottom: 20px;
+}
+
+.drop-zone h2 {
+  font-size: 1.5rem;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+.drop-zone p {
+  color: #718096;
+  font-size: 1rem;
+}
+
+.file-list,
+.results {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+.file-list h3,
+.results h3 {
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.file-list ul,
+.results ul {
+  list-style: none;
+}
+
+.file-list li {
+  padding: 10px 15px;
+  background: #f7fafc;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  color: #4a5568;
+}
+
+.results.processing {
+  border-left: 4px solid #4299e1;
+}
+
+.results.success {
+  border-left: 4px solid #48bb78;
+}
+
+.results.error {
+  border-left: 4px solid #f56565;
+}
+
+.results.partial-success {
+  border-left: 4px solid #ed8936;
+}
+
+.results .summary {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.results li {
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.results li.success {
+  background: #f0fff4;
+  color: #22543d;
+  border-left: 3px solid #48bb78;
+}
+
+.results li.error {
+  background: #fff5f5;
+  color: #742a2a;
+  border-left: 3px solid #f56565;
+}
+
+.results .icon {
+  font-weight: bold;
+  margin-right: 10px;
+  font-size: 1.2rem;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "white-logo-converter",
+  "version": "1.0.0",
+  "description": "Convert logo colors to white while preserving transparency using ImageMagick",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "convert": "node convert-cli.js"
+  },
+  "keywords": ["imagemagick", "logo", "converter", "electron"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}

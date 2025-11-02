@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>White Logo Converter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>White Logo Converter</h1>
+      <p>Convert logo colors to white while preserving transparency</p>
+    </header>
+
+    <div id="dropZone" class="drop-zone">
+      <div class="drop-zone-content">
+        <svg class="drop-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <h2>Drop image files here</h2>
+        <p>or click to select files (PNG, JPG, WebP)</p>
+        <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp" multiple hidden>
+      </div>
+    </div>
+
+    <div id="fileList" class="file-list"></div>
+
+    <div id="results" class="results"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
