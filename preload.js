@@ -1,5 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  convertImages: (filePaths) => ipcRenderer.invoke('convert-images', filePaths)
+  convertImages: (filePaths, settings) => ipcRenderer.invoke('convert-images', filePaths, settings)
 });

@@ -9,16 +9,36 @@ const execAsync = promisify(exec);
 
 const inputDir = path.join(__dirname, 'input');
 const outputDir = path.join(__dirname, 'output');
+const tempDir = path.join(__dirname, 'temp');
 
-async function convertImage(inputPath, outputPath) {
-  // Robust ImageMagick command for macOS/Linux
-  // Converts all formats to PNG with transparency support
-  const command = `magick \\( "${inputPath}" -fill white -draw "color 0,0 reset" \\) \\( "${inputPath}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80) {
+  const baseName = path.basename(inputPath, path.extname(inputPath));
+  const temp1 = path.join(tempDir, `${baseName}_temp1.png`);
+  const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
 
   try {
-    await execAsync(command);
+    // Step 1: Remove white everywhere (including inside letters)
+    const cmd1 = `magick "${inputPath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
+    await execAsync(cmd1);
+
+    // Step 2: Harden the mask for crisp edges
+    const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -threshold ${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
+    await execAsync(cmd2);
+
+    // Step 3: Force visible pixels to pure white, keep transparency
+    const cmd3 = `magick \\( "${temp2}" -fill white -draw "color 0,0 reset" \\) \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+    await execAsync(cmd3);
+
+    // Clean up temp files
+    if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
+    if (fs.existsSync(temp2)) fs.unlinkSync(temp2);
+
     return { success: true };
   } catch (error) {
+    // Clean up temp files on error
+    if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
+    if (fs.existsSync(temp2)) fs.unlinkSync(temp2);
+
     return { success: false, error: error.message };
   }
 }
@@ -26,7 +46,34 @@ async function convertImage(inputPath, outputPath) {
 async function main() {
   console.log('White Logo Converter CLI\n');
 
-  // Ensure input and output directories exist
+  // Parse command-line arguments
+  const args = process.argv.slice(2);
+  let fuzz = 8;
+  let threshold = 80;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--fuzz' && args[i + 1]) {
+      fuzz = parseFloat(args[i + 1]);
+      i++;
+    } else if (args[i] === '--threshold' && args[i + 1]) {
+      threshold = parseFloat(args[i + 1]);
+      i++;
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      console.log('Usage: npm run convert [options]\n');
+      console.log('Options:');
+      console.log('  --fuzz <3-15>       Fuzz percentage for white removal (default: 8)');
+      console.log('  --threshold <70-90> Threshold percentage for edge hardening (default: 80)');
+      console.log('  --help, -h          Show this help message\n');
+      console.log('Examples:');
+      console.log('  npm run convert');
+      console.log('  npm run convert -- --fuzz 10 --threshold 85');
+      process.exit(0);
+    }
+  }
+
+  console.log(`Settings: Fuzz=${fuzz}%, Threshold=${threshold}%\n`);
+
+  // Ensure input, output, and temp directories exist
   if (!fs.existsSync(inputDir)) {
     console.error(`Error: Input directory not found: ${inputDir}`);
     console.log('Please create an "input" folder and add image files to convert.');
@@ -36,6 +83,10 @@ async function main() {
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
     console.log('Created output directory.');
+  }
+
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
   }
 
   // Get all image files from input directory
@@ -65,7 +116,7 @@ async function main() {
 
     process.stdout.write(`Converting ${file}... `);
 
-    const result = await convertImage(inputPath, outputPath);
+    const result = await convertImage(inputPath, outputPath, fuzz, threshold);
 
     if (result.success) {
       console.log('✓ Success');

@@ -2,8 +2,21 @@ const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const results = document.getElementById('results');
+const fuzzSlider = document.getElementById('fuzzSlider');
+const fuzzValue = document.getElementById('fuzzValue');
+const thresholdSlider = document.getElementById('thresholdSlider');
+const thresholdValue = document.getElementById('thresholdValue');
 
 let selectedFiles = [];
+
+// Update slider value displays
+fuzzSlider.addEventListener('input', (e) => {
+  fuzzValue.textContent = `${e.target.value}%`;
+});
+
+thresholdSlider.addEventListener('input', (e) => {
+  thresholdValue.textContent = `${e.target.value}%`;
+});
 
 // Click to select files
 dropZone.addEventListener('click', () => {
@@ -67,16 +80,22 @@ async function convertFiles(files) {
 
   const filePaths = files.map(file => file.path);
 
+  // Get current slider values
+  const settings = {
+    fuzz: parseFloat(fuzzSlider.value),
+    threshold: parseFloat(thresholdSlider.value)
+  };
+
   try {
-    const conversionResults = await window.electronAPI.convertImages(filePaths);
-    displayResults(conversionResults);
+    const conversionResults = await window.electronAPI.convertImages(filePaths, settings);
+    displayResults(conversionResults, settings);
   } catch (error) {
     results.innerHTML = `<h3>Error:</h3><p class="error">${error.message}</p>`;
     results.className = 'results error';
   }
 }
 
-function displayResults(conversionResults) {
+function displayResults(conversionResults, settings) {
   results.innerHTML = '<h3>Results:</h3>';
 
   const successCount = conversionResults.filter(r => r.success).length;
@@ -84,7 +103,7 @@ function displayResults(conversionResults) {
 
   const summary = document.createElement('p');
   summary.className = 'summary';
-  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files`;
+  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%)`;
   results.appendChild(summary);
 
   const ul = document.createElement('ul');
