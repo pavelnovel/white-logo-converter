@@ -68,6 +68,7 @@ npm start
 2. Adjust settings if needed:
    - **Fuzz Percentage** (3-15%, default 8%): How much near-white to remove. Higher = more aggressive white removal
    - **Edge Threshold** (70-90%, default 80%): Edge crispness. Higher = sharper edges (may clip anti-aliasing)
+   - **Preserve Colors** (checkbox): Only convert black/dark areas to white, keep colored parts (e.g., teal, green)
 
 3. Drag and drop image files (PNG, JPG, WebP) into the application window, or click to select files
 
@@ -87,9 +88,15 @@ Or with custom settings:
 npm run convert -- --fuzz 10 --threshold 85
 ```
 
+Preserve colors (for multi-color logos like HPE):
+```bash
+npm run convert -- --preserve-colors
+```
+
 Options:
 - `--fuzz <3-15>`: Fuzz percentage (default: 8)
 - `--threshold <70-90>`: Threshold percentage (default: 80)
+- `--preserve-colors`: Only convert black/dark to white, keep colored parts (default: false)
 - `--help`: Show help message
 
 3. Converted files will be saved to the `output/` folder as PNG files
@@ -125,6 +132,19 @@ Forces all remaining visible pixels to pure white while preserving the transpare
 - Accepts PNG, JPG/JPEG, and WebP input formats
 - Outputs crisp, clean RGBA PNG files
 - Strips metadata for smaller file sizes
+
+### Preserve Colors Mode
+When **Preserve Colors** is enabled (checkbox in UI or `--preserve-colors` in CLI):
+- Only black/dark/grayscale pixels are converted to white
+- Colored pixels (teal, green, blue, etc.) are kept as-is
+- Perfect for multi-color logos like HPE (black "HP" → white, teal "E" stays teal)
+- Uses saturation detection: pixels with low saturation (< 15%) are considered grayscale
+
+**Example use case:** Converting an HPE logo where "HP" is black and "E" is teal. With preserve colors enabled:
+- Black "HP" becomes white
+- Teal "E" stays teal
+- White background becomes transparent
+- Letter holes become transparent
 
 ## Troubleshooting
 

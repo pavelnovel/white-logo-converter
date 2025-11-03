@@ -11,7 +11,7 @@ const inputDir = path.join(__dirname, 'input');
 const outputDir = path.join(__dirname, 'output');
 const tempDir = path.join(__dirname, 'temp');
 
-async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80) {
+async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, preserveColors = false) {
   const baseName = path.basename(inputPath, path.extname(inputPath));
   const temp1 = path.join(tempDir, `${baseName}_temp1.png`);
   const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
@@ -25,8 +25,17 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80) {
     const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -threshold ${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
     await execAsync(cmd2);
 
-    // Step 3: Force visible pixels to pure white, keep transparency
-    const cmd3 = `magick \\( "${temp2}" -fill white -draw "color 0,0 reset" \\) \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+    // Step 3: Convert to white (selectively or fully)
+    let cmd3;
+
+    if (preserveColors) {
+      // Preserve colors: only convert grayscale/black to white
+      cmd3 = `magick "${temp2}" \\( +clone -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) \\( -clone 0 -fill white -colorize 100 \\) -delete 0 -alpha off -compose Over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+    } else {
+      // Convert all to white
+      cmd3 = `magick \\( "${temp2}" -fill white -draw "color 0,0 reset" \\) \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+    }
+
     await execAsync(cmd3);
 
     // Clean up temp files
@@ -50,6 +59,7 @@ async function main() {
   const args = process.argv.slice(2);
   let fuzz = 8;
   let threshold = 80;
+  let preserveColors = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--fuzz' && args[i + 1]) {
@@ -58,20 +68,25 @@ async function main() {
     } else if (args[i] === '--threshold' && args[i + 1]) {
       threshold = parseFloat(args[i + 1]);
       i++;
+    } else if (args[i] === '--preserve-colors') {
+      preserveColors = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log('Usage: npm run convert [options]\n');
       console.log('Options:');
-      console.log('  --fuzz <3-15>       Fuzz percentage for white removal (default: 8)');
-      console.log('  --threshold <70-90> Threshold percentage for edge hardening (default: 80)');
-      console.log('  --help, -h          Show this help message\n');
+      console.log('  --fuzz <3-15>         Fuzz percentage for white removal (default: 8)');
+      console.log('  --threshold <70-90>   Threshold percentage for edge hardening (default: 80)');
+      console.log('  --preserve-colors     Only convert black/dark to white, keep colors (default: false)');
+      console.log('  --help, -h            Show this help message\n');
       console.log('Examples:');
       console.log('  npm run convert');
       console.log('  npm run convert -- --fuzz 10 --threshold 85');
+      console.log('  npm run convert -- --preserve-colors');
       process.exit(0);
     }
   }
 
-  console.log(`Settings: Fuzz=${fuzz}%, Threshold=${threshold}%\n`);
+  const colorMode = preserveColors ? ', Preserve Colors: Yes' : '';
+  console.log(`Settings: Fuzz=${fuzz}%, Threshold=${threshold}%${colorMode}\n`);
 
   // Ensure input, output, and temp directories exist
   if (!fs.existsSync(inputDir)) {
@@ -116,7 +131,7 @@ async function main() {
 
     process.stdout.write(`Converting ${file}... `);
 
-    const result = await convertImage(inputPath, outputPath, fuzz, threshold);
+    const result = await convertImage(inputPath, outputPath, fuzz, threshold, preserveColors);
 
     if (result.success) {
       console.log('✓ Success');

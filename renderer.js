@@ -6,6 +6,7 @@ const fuzzSlider = document.getElementById('fuzzSlider');
 const fuzzValue = document.getElementById('fuzzValue');
 const thresholdSlider = document.getElementById('thresholdSlider');
 const thresholdValue = document.getElementById('thresholdValue');
+const preserveColorsCheckbox = document.getElementById('preserveColors');
 
 let selectedFiles = [];
 
@@ -80,10 +81,11 @@ async function convertFiles(files) {
 
   const filePaths = files.map(file => file.path);
 
-  // Get current slider values
+  // Get current slider values and checkbox state
   const settings = {
     fuzz: parseFloat(fuzzSlider.value),
-    threshold: parseFloat(thresholdSlider.value)
+    threshold: parseFloat(thresholdSlider.value),
+    preserveColors: preserveColorsCheckbox.checked
   };
 
   try {
@@ -103,7 +105,8 @@ function displayResults(conversionResults, settings) {
 
   const summary = document.createElement('p');
   summary.className = 'summary';
-  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%)`;
+  const colorMode = settings.preserveColors ? ', Preserve Colors: Yes' : '';
+  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%${colorMode})`;
   results.appendChild(summary);
 
   const ul = document.createElement('ul');

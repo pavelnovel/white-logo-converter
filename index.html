@@ -31,6 +31,13 @@
         <input type="range" id="thresholdSlider" min="70" max="90" value="80" step="1">
         <p class="setting-description">Edge crispness (higher = sharper, may clip anti-aliasing)</p>
       </div>
+      <div class="setting-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="preserveColors">
+          <span class="checkbox-text">Preserve Colors</span>
+        </label>
+        <p class="setting-description">Only convert black/dark to white, keep colored parts (e.g., teal, green)</p>
+      </div>
     </div>
 
     <div id="dropZone" class="drop-zone">
