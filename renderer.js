@@ -7,6 +7,8 @@ const fuzzValue = document.getElementById('fuzzValue');
 const thresholdSlider = document.getElementById('thresholdSlider');
 const thresholdValue = document.getElementById('thresholdValue');
 const preserveColorsCheckbox = document.getElementById('preserveColors');
+const previewSection = document.getElementById('previewSection');
+const previewContainer = document.getElementById('previewContainer');
 
 let selectedFiles = [];
 
@@ -126,4 +128,46 @@ function displayResults(conversionResults, settings) {
 
   results.appendChild(ul);
   results.className = failCount > 0 ? 'results partial-success' : 'results success';
+
+  // Display preview for successful conversions
+  displayPreview(conversionResults);
+}
+
+function displayPreview(conversionResults) {
+  const successfulResults = conversionResults.filter(r => r.success && r.preview);
+
+  if (successfulResults.length === 0) {
+    previewSection.style.display = 'none';
+    return;
+  }
+
+  previewContainer.innerHTML = '';
+  previewSection.style.display = 'block';
+
+  successfulResults.forEach(result => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+
+    const img = document.createElement('img');
+    img.src = result.preview;
+    img.className = 'preview-image';
+    img.alt = result.file;
+    img.draggable = true;
+
+    // Enable drag to other apps
+    img.addEventListener('dragstart', (e) => {
+      // Set the drag data to the file path for native drag
+      e.dataTransfer.setData('text/uri-list', `file://${result.output}`);
+      e.dataTransfer.setData('text/plain', result.output);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+
+    const filename = document.createElement('span');
+    filename.className = 'preview-filename';
+    filename.textContent = result.file;
+
+    item.appendChild(img);
+    item.appendChild(filename);
+    previewContainer.appendChild(item);
+  });
 }

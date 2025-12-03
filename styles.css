@@ -266,3 +266,68 @@ header p {
   margin-right: 10px;
   font-size: 1.2rem;
 }
+
+/* Preview Section */
+.preview-section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+.preview-section h3 {
+  color: #2d3748;
+  margin-bottom: 8px;
+  font-size: 1.3rem;
+}
+
+.preview-hint {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+.preview-container {
+  background: #1a202c;
+  border-radius: 8px;
+  padding: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  min-height: 150px;
+  align-items: center;
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-image {
+  max-width: 200px;
+  max-height: 150px;
+  cursor: grab;
+  transition: transform 0.2s;
+  -webkit-user-drag: element;
+}
+
+.preview-image:hover {
+  transform: scale(1.05);
+}
+
+.preview-image:active {
+  cursor: grabbing;
+}
+
+.preview-filename {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

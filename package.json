@@ -5,12 +5,45 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "convert": "node convert-cli.js"
+    "convert": "node convert-cli.js",
+    "test": "jest",
+    "test:smoke": "jest tests/smoke",
+    "test:integration": "jest tests/integration",
+    "build": "electron-builder --mac",
+    "build:dir": "electron-builder --mac --dir"
   },
-  "keywords": ["imagemagick", "logo", "converter", "electron"],
+  "keywords": [
+    "imagemagick",
+    "logo",
+    "converter",
+    "electron"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0"
+    "electron": "^28.0.0",
+    "electron-builder": "^26.0.12",
+    "jest": "^30.2.0"
+  },
+  "build": {
+    "appId": "com.logoconverter.app",
+    "productName": "White Logo Converter",
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": "dir"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "styles.css",
+      "input",
+      "output",
+      "temp"
+    ],
+    "directories": {
+      "output": "dist"
+    }
   }
 }

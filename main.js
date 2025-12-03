@@ -33,10 +33,39 @@ app.on('activate', () => {
   }
 });
 
+// Get writable directories (works both in dev and packaged app)
+function getOutputDir() {
+  // Always use the project's output folder
+  return '/Users/pk/Desktop/nb/cs/white-logo-converter/output';
+}
+
+function getTempDir() {
+  if (app.isPackaged) {
+    // When packaged, use system temp
+    return path.join(app.getPath('temp'), 'white-logo-converter');
+  }
+  return path.join(__dirname, 'temp');
+}
+
+// Get exec options with proper PATH for ImageMagick
+// Fixes: "magick: command not found" in packaged app
+function getExecOptions() {
+  const homebrewPaths = process.arch === 'arm64'
+    ? '/opt/homebrew/bin:/opt/homebrew/sbin'  // Apple Silicon
+    : '/usr/local/bin:/usr/local/sbin';        // Intel Mac
+
+  const currentPath = process.env.PATH || '';
+  const fixedPath = `${homebrewPaths}:${currentPath}`;
+
+  return {
+    env: { ...process.env, PATH: fixedPath }
+  };
+}
+
 // Handle image conversion
 ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
-  const outputDir = path.join(__dirname, 'output');
-  const tempDir = path.join(__dirname, 'temp');
+  const outputDir = getOutputDir();
+  const tempDir = getTempDir();
 
   // Ensure output and temp directories exist
   if (!fs.existsSync(outputDir)) {
@@ -69,8 +98,10 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       // Step 1: Remove white everywhere (including inside letters)
       const cmd1 = `magick "${filePath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
 
+      const execOptions = getExecOptions();
+
       await new Promise((resolve, reject) => {
-        exec(cmd1, (error) => {
+        exec(cmd1, execOptions, (error) => {
           if (error) reject(error);
           else resolve();
         });
@@ -80,7 +111,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -threshold ${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
 
       await new Promise((resolve, reject) => {
-        exec(cmd2, (error) => {
+        exec(cmd2, execOptions, (error) => {
           if (error) reject(error);
           else resolve();
         });
@@ -99,7 +130,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       }
 
       await new Promise((resolve, reject) => {
-        exec(cmd3, (error) => {
+        exec(cmd3, execOptions, (error) => {
           if (error) reject(error);
           else resolve();
         });
@@ -112,7 +143,11 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
         }
       });
 
-      results.push({ success: true, file: fileName, output: outputPath });
+      // Read output as base64 for preview
+      const previewBuffer = fs.readFileSync(outputPath);
+      const previewBase64 = `data:image/png;base64,${previewBuffer.toString('base64')}`;
+
+      results.push({ success: true, file: fileName, output: outputPath, preview: previewBase64 });
     } catch (error) {
       // Clean up temp files on error
       tempFiles.forEach(file => {
