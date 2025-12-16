@@ -1,6 +1,6 @@
 # White Logo Converter
 
-Convert logo colors to white while **creating transparency from white areas** (perfect for logo letter holes) using ImageMagick. Supports PNG, JPG, and WebP formats. Includes both a desktop UI with adjustable settings and CLI interface.
+Convert logo colors to white while **creating transparency from white areas** (perfect for logo letter holes) using ImageMagick. Supports PNG, JPG, WebP, and AVIF formats. Includes both a desktop UI with adjustable settings and CLI interface.
 
 ## Prerequisites
 
@@ -70,13 +70,13 @@ npm start
    - **Edge Threshold** (70-90%, default 80%): Edge crispness. Higher = sharper edges (may clip anti-aliasing)
    - **Preserve Colors** (checkbox): Only convert black/dark areas to white, keep colored parts (e.g., teal, green)
 
-3. Drag and drop image files (PNG, JPG, WebP) into the application window, or click to select files
+3. Drag and drop image files (PNG, JPG, WebP, AVIF) into the application window, or click to select files
 
 4. Converted files are automatically saved to the `output/` folder as PNG files
 
 ### CLI Mode
 
-1. Place image files (PNG, JPG, WebP) in the `input/` folder
+1. Place image files (PNG, JPG, WebP, AVIF) in the `input/` folder
 
 2. Run the conversion script with default settings:
 ```bash
@@ -129,7 +129,7 @@ Forces all remaining visible pixels to pure white while preserving the transpare
 ### What This Achieves
 - **Creates transparency** from white areas (not just preserving existing alpha)
 - Perfect for logos where letter holes need to be transparent
-- Accepts PNG, JPG/JPEG, and WebP input formats
+- Accepts PNG, JPG/JPEG, WebP, and AVIF input formats
 - Outputs crisp, clean RGBA PNG files
 - Strips metadata for smaller file sizes
 

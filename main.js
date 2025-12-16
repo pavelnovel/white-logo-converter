@@ -125,8 +125,9 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
         // Create saturation mask, composite white over grayscale areas only
         cmd3 = `magick "${temp2}" \\( +clone -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) \\( -clone 0 -fill white -colorize 100 \\) -delete 0 -alpha off -compose Over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
       } else {
-        // Convert all to white
-        cmd3 = `magick \\( "${temp2}" -fill white -draw "color 0,0 reset" \\) \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+        // Convert all to white - preserves anti-aliasing by directly setting RGB to white
+        // while leaving the alpha channel completely untouched
+        cmd3 = `magick "${temp2}" -channel RGB -evaluate set 100% +channel -define png:color-type=6 "${outputPath}"`;
       }
 
       await new Promise((resolve, reject) => {
@@ -161,4 +162,12 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
   }
 
   return results;
+});
+
+// Handle native file drag from preview
+ipcMain.on('start-drag', (event, filePath) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: path.join(__dirname, 'input', 'test-logo.png') // Optional: use a generic icon or the file itself
+  });
 });

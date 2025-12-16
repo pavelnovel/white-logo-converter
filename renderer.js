@@ -48,7 +48,8 @@ dropZone.addEventListener('drop', (e) => {
   const files = Array.from(e.dataTransfer.files).filter(file => {
     const name = file.name.toLowerCase();
     return name.endsWith('.png') || name.endsWith('.jpg') ||
-           name.endsWith('.jpeg') || name.endsWith('.webp');
+           name.endsWith('.jpeg') || name.endsWith('.webp') ||
+           name.endsWith('.avif');
   });
 
   handleFiles(files);
@@ -153,13 +154,12 @@ function displayPreview(conversionResults) {
     img.className = 'preview-image';
     img.alt = result.file;
     img.draggable = true;
+    img.style.cursor = 'grab';
 
-    // Enable drag to other apps
+    // Enable native drag to other apps using Electron's drag API
     img.addEventListener('dragstart', (e) => {
-      // Set the drag data to the file path for native drag
-      e.dataTransfer.setData('text/uri-list', `file://${result.output}`);
-      e.dataTransfer.setData('text/plain', result.output);
-      e.dataTransfer.effectAllowed = 'copy';
+      e.preventDefault();
+      window.electronAPI.startDrag(result.output);
     });
 
     const filename = document.createElement('span');
