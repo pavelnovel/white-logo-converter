@@ -1,6 +1,6 @@
 # White Logo Converter
 
-Convert logo colors to white while **creating transparency from white areas** (perfect for logo letter holes) using ImageMagick. Supports PNG, JPG, WebP, and AVIF formats. Includes both a desktop UI with adjustable settings and CLI interface.
+Convert logo colors to white while **creating transparency from white areas** (perfect for logo letter holes) using ImageMagick. Supports PNG, JPG, WebP, and AVIF formats (AVIF logos are decoded internally when ImageMagick lacks AVIF support). Includes both a desktop UI with adjustable settings and CLI interface.
 
 ## Prerequisites
 
@@ -113,10 +113,10 @@ Removes white and near-white pixels (including inside letter holes), making them
 
 ### Step 2: Harden Mask for Crisp Edges
 ```bash
-magick temp1.png \( +clone -alpha extract -threshold 80% \) \
+magick temp1.png \( +clone -alpha extract -level 0%,80% \) \
        -compose Copy_Opacity -composite temp2.png
 ```
-Sharpens edges for clean, professional logo appearance.
+Sharpens edges for clean, professional logo appearance while preserving the anti-aliasing from the original logo.
 
 ### Step 3: Rebuild as Pure White
 ```bash
@@ -129,7 +129,7 @@ Forces all remaining visible pixels to pure white while preserving the transpare
 ### What This Achieves
 - **Creates transparency** from white areas (not just preserving existing alpha)
 - Perfect for logos where letter holes need to be transparent
-- Accepts PNG, JPG/JPEG, WebP, and AVIF input formats
+- Accepts PNG, JPG/JPEG, WebP, and AVIF input formats (AVIF can be pre-decoded via [Sharp](https://sharp.pixelplumbing.com/) before ImageMagick runs when necessary)
 - Outputs crisp, clean RGBA PNG files
 - Strips metadata for smaller file sizes
 
@@ -145,6 +145,11 @@ When **Preserve Colors** is enabled (checkbox in UI or `--preserve-colors` in CL
 - Teal "E" stays teal
 - White background becomes transparent
 - Letter holes become transparent
+
+### AVIF Support Details
+- If ImageMagick already supports AVIF, files are processed directly for maximum fidelity
+- When delegates are missing, the app automatically decodes AVIF files with Sharp into temporary PNGs so you can still drop `.avif` logos in the UI
+- The CLI benefits from the same fallback path—no extra setup beyond `npm install` is required
 
 ## Troubleshooting
 

@@ -34,6 +34,7 @@
     },
     "files": [
       "main.js",
+      "image-prep.js",
       "preload.js",
       "renderer.js",
       "index.html",
@@ -45,5 +46,8 @@
     "directories": {
       "output": "dist"
     }
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
   }
 }

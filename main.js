@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
+const { prepareInputForMagick } = require('./image-prep');
 
 let mainWindow;
 
@@ -80,6 +81,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
   const preserveColors = settings.preserveColors || false;
 
   const results = [];
+  const execOptions = getExecOptions();
 
   for (const filePath of filePaths) {
     const tempFiles = [];
@@ -95,10 +97,11 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
       tempFiles.push(temp1, temp2);
 
-      // Step 1: Remove white everywhere (including inside letters)
-      const cmd1 = `magick "${filePath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
+      const { preparedPath, cleanupFiles } = await prepareInputForMagick(filePath, tempDir, execOptions);
+      tempFiles.push(...cleanupFiles);
 
-      const execOptions = getExecOptions();
+      // Step 1: Remove white everywhere (including inside letters)
+      const cmd1 = `magick "${preparedPath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
 
       await new Promise((resolve, reject) => {
         exec(cmd1, execOptions, (error) => {
@@ -107,8 +110,8 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
         });
       });
 
-      // Step 2: Harden the mask for crisp edges
-      const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -threshold ${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
+      // Step 2: Harden the mask for crisp edges while preserving anti-aliasing
+      const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -level 0%,${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
 
       await new Promise((resolve, reject) => {
         exec(cmd2, execOptions, (error) => {

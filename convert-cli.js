@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const { prepareInputForMagick } = require('./image-prep');
 
 const execAsync = promisify(exec);
 
@@ -16,13 +17,18 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
   const temp1 = path.join(tempDir, `${baseName}_temp1.png`);
   const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
 
+  const auxFiles = [];
+
   try {
+    const { preparedPath, cleanupFiles } = await prepareInputForMagick(inputPath, tempDir);
+    auxFiles.push(...cleanupFiles);
+
     // Step 1: Remove white everywhere (including inside letters)
-    const cmd1 = `magick "${inputPath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
+    const cmd1 = `magick "${preparedPath}" -alpha set -fuzz ${fuzz}% -fill none -opaque white "${temp1}"`;
     await execAsync(cmd1);
 
-    // Step 2: Harden the mask for crisp edges
-    const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -threshold ${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
+    // Step 2: Harden the mask for crisp edges while preserving anti-aliasing
+    const cmd2 = `magick "${temp1}" \\( +clone -alpha extract -level 0%,${threshold}% \\) -compose Copy_Opacity -composite "${temp2}"`;
     await execAsync(cmd2);
 
     // Step 3: Convert to white (selectively or fully)
@@ -42,12 +48,18 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
     // Clean up temp files
     if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
     if (fs.existsSync(temp2)) fs.unlinkSync(temp2);
+    auxFiles.forEach(file => {
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    });
 
     return { success: true };
   } catch (error) {
     // Clean up temp files on error
     if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
     if (fs.existsSync(temp2)) fs.unlinkSync(temp2);
+    auxFiles.forEach(file => {
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    });
 
     return { success: false, error: error.message };
   }

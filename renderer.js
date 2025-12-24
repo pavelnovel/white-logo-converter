@@ -10,6 +10,9 @@ const preserveColorsCheckbox = document.getElementById('preserveColors');
 const previewSection = document.getElementById('previewSection');
 const previewContainer = document.getElementById('previewContainer');
 
+const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.avif'];
+const supportedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
+
 let selectedFiles = [];
 
 // Update slider value displays
@@ -45,12 +48,7 @@ dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
 
-  const files = Array.from(e.dataTransfer.files).filter(file => {
-    const name = file.name.toLowerCase();
-    return name.endsWith('.png') || name.endsWith('.jpg') ||
-           name.endsWith('.jpeg') || name.endsWith('.webp') ||
-           name.endsWith('.avif');
-  });
+  const files = Array.from(e.dataTransfer.files).filter(isSupportedFile);
 
   handleFiles(files);
 });
@@ -60,9 +58,17 @@ function handleFiles(files) {
     return;
   }
 
-  selectedFiles = files;
-  displayFileList(files);
-  convertFiles(files);
+  const validFiles = files.filter(isSupportedFile);
+
+  if (validFiles.length === 0) {
+    results.innerHTML = '<h3>Error:</h3><p class="error">Only PNG, JPG, WebP, and AVIF files are supported.</p>';
+    results.className = 'results error';
+    return;
+  }
+
+  selectedFiles = validFiles;
+  displayFileList(validFiles);
+  convertFiles(validFiles);
 }
 
 function displayFileList(files) {
@@ -170,4 +176,11 @@ function displayPreview(conversionResults) {
     item.appendChild(filename);
     previewContainer.appendChild(item);
   });
+}
+
+function isSupportedFile(file) {
+  const name = (file.name || '').toLowerCase();
+  const hasSupportedExtension = supportedExtensions.some(ext => name.endsWith(ext));
+  const hasSupportedMime = supportedMimeTypes.includes(file.type);
+  return hasSupportedExtension || hasSupportedMime;
 }
