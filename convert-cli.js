@@ -65,6 +65,37 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
   }
 }
 
+function convertSvgToWhite(filePath, outputDir) {
+  const fileName = path.basename(filePath);
+  const outputPath = path.join(outputDir, fileName);
+
+  try {
+    let svg = fs.readFileSync(filePath, 'utf8');
+
+    svg = svg.replace(
+      /fill\s*=\s*"(?!none|transparent)([^"]*)"/gi,
+      'fill="white"'
+    );
+    svg = svg.replace(
+      /fill\s*:\s*(?!none|transparent)[^;}"']+/gi,
+      'fill: white'
+    );
+    svg = svg.replace(
+      /stroke\s*=\s*"(?!none|transparent)([^"]*)"/gi,
+      'stroke="white"'
+    );
+    svg = svg.replace(
+      /stroke\s*:\s*(?!none|transparent)[^;}"']+/gi,
+      'stroke: white'
+    );
+
+    fs.writeFileSync(outputPath, svg, 'utf8');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 async function main() {
   console.log('White Logo Converter CLI\n');
 
@@ -122,7 +153,7 @@ async function main() {
     const lower = file.toLowerCase();
     return lower.endsWith('.png') || lower.endsWith('.jpg') ||
            lower.endsWith('.jpeg') || lower.endsWith('.webp') ||
-           lower.endsWith('.avif');
+           lower.endsWith('.avif') || lower.endsWith('.svg');
   });
 
   if (files.length === 0) {
@@ -137,13 +168,26 @@ async function main() {
 
   for (const file of files) {
     const inputPath = path.join(inputDir, file);
+    const ext = path.extname(file).toLowerCase();
 
-    // Convert all files to PNG format
+    process.stdout.write(`Converting ${file}... `);
+
+    if (ext === '.svg') {
+      const result = convertSvgToWhite(inputPath, outputDir);
+      if (result.success) {
+        console.log('✓ Success');
+        successCount++;
+      } else {
+        console.log(`✗ Failed: ${result.error}`);
+        failCount++;
+      }
+      continue;
+    }
+
+    // Convert raster files to PNG format
     const baseName = path.basename(file, path.extname(file));
     const outputFileName = `${baseName}.png`;
     const outputPath = path.join(outputDir, outputFileName);
-
-    process.stdout.write(`Converting ${file}... `);
 
     const result = await convertImage(inputPath, outputPath, fuzz, threshold, preserveColors);
 

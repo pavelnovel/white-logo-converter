@@ -63,6 +63,52 @@ function getExecOptions() {
   };
 }
 
+function convertSvgToWhite(filePath, outputDir) {
+  const fileName = path.basename(filePath);
+  const outputPath = path.join(outputDir, fileName);
+
+  try {
+    let svg = fs.readFileSync(filePath, 'utf8');
+
+    // Replace fill colors with white (skip none/transparent)
+    svg = svg.replace(
+      /fill\s*=\s*"(?!none|transparent)([^"]*)"/gi,
+      'fill="white"'
+    );
+    svg = svg.replace(
+      /fill\s*:\s*(?!none|transparent)[^;}"']+/gi,
+      'fill: white'
+    );
+
+    // Replace stroke colors with white (skip none/transparent)
+    svg = svg.replace(
+      /stroke\s*=\s*"(?!none|transparent)([^"]*)"/gi,
+      'stroke="white"'
+    );
+    svg = svg.replace(
+      /stroke\s*:\s*(?!none|transparent)[^;}"']+/gi,
+      'stroke: white'
+    );
+
+    fs.writeFileSync(outputPath, svg, 'utf8');
+
+    const previewBase64 = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+
+    return {
+      success: true,
+      file: fileName,
+      output: outputPath,
+      preview: previewBase64
+    };
+  } catch (error) {
+    return {
+      success: false,
+      file: fileName,
+      error: error.message
+    };
+  }
+}
+
 // Handle image conversion
 ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
   const outputDir = getOutputDir();
@@ -89,6 +135,14 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
     try {
       const fileName = path.basename(filePath);
       const baseName = path.basename(fileName, path.extname(fileName));
+      const ext = path.extname(fileName).toLowerCase();
+
+      if (ext === '.svg') {
+        const result = convertSvgToWhite(filePath, outputDir);
+        results.push(result);
+        continue;
+      }
+
       const outputFileName = `${baseName}.png`;
       const outputPath = path.join(outputDir, outputFileName);
 

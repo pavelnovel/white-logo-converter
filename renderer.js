@@ -10,8 +10,8 @@ const preserveColorsCheckbox = document.getElementById('preserveColors');
 const previewSection = document.getElementById('previewSection');
 const previewContainer = document.getElementById('previewContainer');
 
-const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.avif'];
-const supportedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
+const supportedExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.svg'];
+const supportedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/svg+xml'];
 
 let selectedFiles = [];
 
@@ -61,7 +61,7 @@ function handleFiles(files) {
   const validFiles = files.filter(isSupportedFile);
 
   if (validFiles.length === 0) {
-    results.innerHTML = '<h3>Error:</h3><p class="error">Only PNG, JPG, WebP, and AVIF files are supported.</p>';
+    results.innerHTML = '<h3>Error:</h3><p class="error">Only PNG, JPG, WebP, AVIF, and SVG files are supported.</p>';
     results.className = 'results error';
     return;
   }
