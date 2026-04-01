@@ -37,7 +37,7 @@ app.on('activate', () => {
 // Get writable directories (works both in dev and packaged app)
 function getOutputDir() {
   // Always use the project's output folder
-  return '/Users/pk/Desktop/nb/cs/white-logo-converter/output';
+  return path.join(__dirname, 'output');
 }
 
 function getTempDir() {
