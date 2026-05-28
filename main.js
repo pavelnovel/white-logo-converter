@@ -178,9 +178,10 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       let cmd3;
 
       if (preserveColors) {
-        // Preserve colors: only convert grayscale/black to white
-        // Create saturation mask, composite white over grayscale areas only
-        cmd3 = `magick "${temp2}" \\( +clone -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) \\( -clone 0 -fill white -colorize 100 \\) -delete 0 -alpha off -compose Over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+        // Preserve colors: composite white only over grayscale/black areas,
+        // keeping saturated (colored) pixels as-is. Base = original color,
+        // overlay = all-white, mask = white where saturation < 15%.
+        cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
       } else {
         // Convert all to white - preserves anti-aliasing by directly setting RGB to white
         // while leaving the alpha channel completely untouched
