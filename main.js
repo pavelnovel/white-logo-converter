@@ -178,10 +178,12 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       let cmd3;
 
       if (preserveColors) {
-        // Preserve colors: composite white only over grayscale/black areas,
-        // keeping saturated (colored) pixels as-is. Base = original color,
-        // overlay = all-white, mask = white where saturation < 15%.
-        cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+        // Preserve colors: composite white only over low-chroma (black/gray/dark) areas,
+        // keeping visually colorful pixels as-is. Chroma (max-min of RGB) is used instead
+        // of HSL saturation, which reads near-black tinted colors (e.g. dark navy text)
+        // as highly saturated. Base = original color, overlay = all-white,
+        // mask = white where chroma < 15%.
+        cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -fx "max(max(r,g),b)-min(min(r,g),b)" -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
       } else {
         // Convert all to white - preserves anti-aliasing by directly setting RGB to white
         // while leaving the alpha channel completely untouched
