@@ -125,6 +125,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
   const fuzz = settings.fuzz || 8;
   const threshold = settings.threshold || 80;
   const preserveColors = settings.preserveColors || false;
+  const maxSize = settings.maxSize ?? 1000;
 
   const results = [];
   const execOptions = getExecOptions();
@@ -175,17 +176,20 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       });
 
       // Step 3: Convert to white (selectively or fully)
+      // The trailing ">" only shrinks images larger than maxSize, never upscales.
+      // Resizing last means the white conversion runs at full resolution (supersampling).
+      const resizeArg = maxSize > 0 ? `-resize "${maxSize}x${maxSize}>" ` : '';
       let cmd3;
 
       if (preserveColors) {
         // Preserve colors: composite white only over grayscale/black areas,
         // keeping saturated (colored) pixels as-is. Base = original color,
         // overlay = all-white, mask = white where saturation < 15%.
-        cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+        cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite ${resizeArg}-define png:color-type=6 -strip "${outputPath}"`;
       } else {
         // Convert all to white - preserves anti-aliasing by directly setting RGB to white
         // while leaving the alpha channel completely untouched
-        cmd3 = `magick "${temp2}" -channel RGB -evaluate set 100% +channel -define png:color-type=6 "${outputPath}"`;
+        cmd3 = `magick "${temp2}" -channel RGB -evaluate set 100% +channel ${resizeArg}-define png:color-type=6 "${outputPath}"`;
       }
 
       await new Promise((resolve, reject) => {

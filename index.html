@@ -31,6 +31,14 @@
         <input type="range" id="thresholdSlider" min="70" max="90" value="80" step="1">
         <p class="setting-description">Edge crispness (higher = sharper, may clip anti-aliasing)</p>
       </div>
+      <div class="setting-group">
+        <div class="setting-header">
+          <label for="maxSizeSlider">Max Size</label>
+          <span id="maxSizeValue" class="value-display">1000px</span>
+        </div>
+        <input type="range" id="maxSizeSlider" min="0" max="4000" value="1000" step="100">
+        <p class="setting-description">Downscale logos larger than this (longest side, never upscales). 0 = off</p>
+      </div>
       <div class="setting-group checkbox-group">
         <label class="checkbox-label">
           <input type="checkbox" id="preserveColors">

@@ -6,6 +6,8 @@ const fuzzSlider = document.getElementById('fuzzSlider');
 const fuzzValue = document.getElementById('fuzzValue');
 const thresholdSlider = document.getElementById('thresholdSlider');
 const thresholdValue = document.getElementById('thresholdValue');
+const maxSizeSlider = document.getElementById('maxSizeSlider');
+const maxSizeValue = document.getElementById('maxSizeValue');
 const preserveColorsCheckbox = document.getElementById('preserveColors');
 const previewSection = document.getElementById('previewSection');
 const previewContainer = document.getElementById('previewContainer');
@@ -22,6 +24,11 @@ fuzzSlider.addEventListener('input', (e) => {
 
 thresholdSlider.addEventListener('input', (e) => {
   thresholdValue.textContent = `${e.target.value}%`;
+});
+
+maxSizeSlider.addEventListener('input', (e) => {
+  const value = parseInt(e.target.value, 10);
+  maxSizeValue.textContent = value > 0 ? `${value}px` : 'Off';
 });
 
 // Click to select files
@@ -94,6 +101,7 @@ async function convertFiles(files) {
   const settings = {
     fuzz: parseFloat(fuzzSlider.value),
     threshold: parseFloat(thresholdSlider.value),
+    maxSize: parseInt(maxSizeSlider.value, 10),
     preserveColors: preserveColorsCheckbox.checked
   };
 
@@ -115,7 +123,8 @@ function displayResults(conversionResults, settings) {
   const summary = document.createElement('p');
   summary.className = 'summary';
   const colorMode = settings.preserveColors ? ', Preserve Colors: Yes' : '';
-  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%${colorMode})`;
+  const sizeMode = settings.maxSize > 0 ? `, Max Size: ${settings.maxSize}px` : '';
+  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%${colorMode}${sizeMode})`;
   results.appendChild(summary);
 
   const ul = document.createElement('ul');
