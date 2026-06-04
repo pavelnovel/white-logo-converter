@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const { prepareInputForMagick } = require('./image-prep');
+const { prepareInputForMagick, getImageDimensions } = require('./image-prep');
 
 const execAsync = promisify(exec);
 
@@ -12,7 +12,8 @@ const inputDir = path.join(__dirname, 'input');
 const outputDir = path.join(__dirname, 'output');
 const tempDir = path.join(__dirname, 'temp');
 
-async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, preserveColors = false) {
+async function convertImage(inputPath, outputPath, options = {}) {
+  const { fuzz = 8, threshold = 80, preserveColors = false, maxSize = 400 } = options;
   const baseName = path.basename(inputPath, path.extname(inputPath));
   const temp1 = path.join(tempDir, `${baseName}_temp1.png`);
   const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
@@ -20,6 +21,7 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
   const auxFiles = [];
 
   try {
+    const originalSize = await getImageDimensions(inputPath);
     const { preparedPath, cleanupFiles } = await prepareInputForMagick(inputPath, tempDir);
     auxFiles.push(...cleanupFiles);
 
@@ -32,20 +34,25 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
     await execAsync(cmd2);
 
     // Step 3: Convert to white (selectively or fully)
+    // The trailing ">" only shrinks images larger than maxSize, never upscales.
+    // Resizing last means the white conversion runs at full resolution (supersampling).
+    const resizeArg = maxSize > 0 ? `-resize "${maxSize}x${maxSize}>" ` : '';
     let cmd3;
 
     if (preserveColors) {
       // Preserve colors: composite white only over grayscale/black areas,
       // keeping saturated (colored) pixels as-is. Base = original color,
       // overlay = all-white, mask = white where saturation < 15%.
-      cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite -define png:color-type=6 -strip "${outputPath}"`;
+      cmd3 = `magick "${temp2}" \\( +clone -fill white -colorize 100 \\) \\( "${temp2}" -alpha off -colorspace HSL -channel S -separate +channel -threshold 15% -negate \\) -compose over -composite \\( "${temp2}" -alpha extract \\) -compose Copy_Alpha -composite ${resizeArg}-define png:color-type=6 -strip "${outputPath}"`;
     } else {
       // Convert all to white - preserves anti-aliasing by directly setting RGB to white
       // while leaving the alpha channel completely untouched
-      cmd3 = `magick "${temp2}" -channel RGB -evaluate set 100% +channel -define png:color-type=6 "${outputPath}"`;
+      cmd3 = `magick "${temp2}" -channel RGB -evaluate set 100% +channel ${resizeArg}-define png:color-type=6 "${outputPath}"`;
     }
 
     await execAsync(cmd3);
+
+    const outputSize = await getImageDimensions(outputPath);
 
     // Clean up temp files
     if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
@@ -54,7 +61,7 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
       if (fs.existsSync(file)) fs.unlinkSync(file);
     });
 
-    return { success: true };
+    return { success: true, originalSize, outputSize };
   } catch (error) {
     // Clean up temp files on error
     if (fs.existsSync(temp1)) fs.unlinkSync(temp1);
@@ -65,6 +72,19 @@ async function convertImage(inputPath, outputPath, fuzz = 8, threshold = 80, pre
 
     return { success: false, error: error.message };
   }
+}
+
+function formatSizeInfo(originalSize, outputSize) {
+  if (!originalSize || !outputSize) {
+    return '';
+  }
+  const orig = `${originalSize.width}×${originalSize.height}`;
+  const resized = originalSize.width !== outputSize.width ||
+                  originalSize.height !== outputSize.height;
+  if (!resized) {
+    return ` (${orig})`;
+  }
+  return ` (${orig} → ${outputSize.width}×${outputSize.height}, resized)`;
 }
 
 function convertSvgToWhite(filePath, outputDir) {
@@ -106,6 +126,7 @@ async function main() {
   let fuzz = 8;
   let threshold = 80;
   let preserveColors = false;
+  let maxSize = 400;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--fuzz' && args[i + 1]) {
@@ -114,6 +135,13 @@ async function main() {
     } else if (args[i] === '--threshold' && args[i + 1]) {
       threshold = parseFloat(args[i + 1]);
       i++;
+    } else if (args[i] === '--max-size' && args[i + 1]) {
+      maxSize = parseInt(args[i + 1], 10);
+      if (Number.isNaN(maxSize) || maxSize < 0) {
+        console.error(`Error: --max-size must be a non-negative number, got "${args[i + 1]}"`);
+        process.exit(1);
+      }
+      i++;
     } else if (args[i] === '--preserve-colors') {
       preserveColors = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
@@ -121,18 +149,21 @@ async function main() {
       console.log('Options:');
       console.log('  --fuzz <3-15>         Fuzz percentage for white removal (default: 8)');
       console.log('  --threshold <70-90>   Threshold percentage for edge hardening (default: 80)');
+      console.log('  --max-size <px>       Downscale logos whose longest side exceeds this; never upscales. 0 disables (default: 400)');
       console.log('  --preserve-colors     Only convert black/dark to white, keep colors (default: false)');
       console.log('  --help, -h            Show this help message\n');
       console.log('Examples:');
       console.log('  npm run convert');
       console.log('  npm run convert -- --fuzz 10 --threshold 85');
+      console.log('  npm run convert -- --max-size 500');
       console.log('  npm run convert -- --preserve-colors');
       process.exit(0);
     }
   }
 
   const colorMode = preserveColors ? ', Preserve Colors: Yes' : '';
-  console.log(`Settings: Fuzz=${fuzz}%, Threshold=${threshold}%${colorMode}\n`);
+  const sizeMode = maxSize > 0 ? `, Max Size=${maxSize}px` : ', Max Size=off';
+  console.log(`Settings: Fuzz=${fuzz}%, Threshold=${threshold}%${colorMode}${sizeMode}\n`);
 
   // Ensure input, output, and temp directories exist
   if (!fs.existsSync(inputDir)) {
@@ -191,10 +222,10 @@ async function main() {
     const outputFileName = `${baseName}.png`;
     const outputPath = path.join(outputDir, outputFileName);
 
-    const result = await convertImage(inputPath, outputPath, fuzz, threshold, preserveColors);
+    const result = await convertImage(inputPath, outputPath, { fuzz, threshold, preserveColors, maxSize });
 
     if (result.success) {
-      console.log('✓ Success');
+      console.log(`✓ Success${formatSizeInfo(result.originalSize, result.outputSize)}`);
       successCount++;
     } else {
       console.log(`✗ Failed: ${result.error}`);

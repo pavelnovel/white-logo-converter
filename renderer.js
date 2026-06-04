@@ -6,6 +6,8 @@ const fuzzSlider = document.getElementById('fuzzSlider');
 const fuzzValue = document.getElementById('fuzzValue');
 const thresholdSlider = document.getElementById('thresholdSlider');
 const thresholdValue = document.getElementById('thresholdValue');
+const maxSizeSlider = document.getElementById('maxSizeSlider');
+const maxSizeValue = document.getElementById('maxSizeValue');
 const preserveColorsCheckbox = document.getElementById('preserveColors');
 const previewSection = document.getElementById('previewSection');
 const previewContainer = document.getElementById('previewContainer');
@@ -22,6 +24,11 @@ fuzzSlider.addEventListener('input', (e) => {
 
 thresholdSlider.addEventListener('input', (e) => {
   thresholdValue.textContent = `${e.target.value}%`;
+});
+
+maxSizeSlider.addEventListener('input', (e) => {
+  const value = parseInt(e.target.value, 10);
+  maxSizeValue.textContent = value > 0 ? `${value}px` : 'Off';
 });
 
 // Click to select files
@@ -94,6 +101,7 @@ async function convertFiles(files) {
   const settings = {
     fuzz: parseFloat(fuzzSlider.value),
     threshold: parseFloat(thresholdSlider.value),
+    maxSize: parseInt(maxSizeSlider.value, 10),
     preserveColors: preserveColorsCheckbox.checked
   };
 
@@ -115,7 +123,8 @@ function displayResults(conversionResults, settings) {
   const summary = document.createElement('p');
   summary.className = 'summary';
   const colorMode = settings.preserveColors ? ', Preserve Colors: Yes' : '';
-  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%${colorMode})`;
+  const sizeMode = settings.maxSize > 0 ? `, Max Size: ${settings.maxSize}px` : '';
+  summary.textContent = `Converted ${successCount} of ${conversionResults.length} files (Fuzz: ${settings.fuzz}%, Threshold: ${settings.threshold}%${colorMode}${sizeMode})`;
   results.appendChild(summary);
 
   const ul = document.createElement('ul');
@@ -125,7 +134,7 @@ function displayResults(conversionResults, settings) {
     li.className = result.success ? 'success' : 'error';
 
     if (result.success) {
-      li.innerHTML = `<span class="icon">✓</span> ${result.file} → output/${result.file}`;
+      li.innerHTML = `<span class="icon">✓</span> ${result.file} → output/${result.file}${formatSizeInfo(result)}`;
     } else {
       li.innerHTML = `<span class="icon">✗</span> ${result.file}: ${result.error}`;
     }
@@ -174,8 +183,31 @@ function displayPreview(conversionResults) {
 
     item.appendChild(img);
     item.appendChild(filename);
+
+    const sizeInfo = formatSizeInfo(result);
+    if (sizeInfo) {
+      const dims = document.createElement('span');
+      dims.className = 'preview-dimensions';
+      dims.innerHTML = sizeInfo.trim();
+      item.appendChild(dims);
+    }
+
     previewContainer.appendChild(item);
   });
+}
+
+function formatSizeInfo(result) {
+  const { originalSize, outputSize } = result;
+  if (!originalSize || !outputSize) {
+    return '';
+  }
+  const orig = `${originalSize.width}×${originalSize.height}`;
+  const resized = originalSize.width !== outputSize.width ||
+                  originalSize.height !== outputSize.height;
+  const text = resized
+    ? `${orig} → ${outputSize.width}×${outputSize.height} (resized)`
+    : orig;
+  return ` <span class="size-info${resized ? ' resized' : ''}">${text}</span>`;
 }
 
 function isSupportedFile(file) {

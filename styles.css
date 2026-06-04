@@ -331,3 +331,17 @@ header p {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.preview-dimensions {
+  margin-top: -4px;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.size-info {
+  color: #718096;
+}
+
+.size-info.resized {
+  color: #48bb78;
+}

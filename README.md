@@ -96,6 +96,7 @@ npm run convert -- --preserve-colors
 Options:
 - `--fuzz <3-15>`: Fuzz percentage (default: 8)
 - `--threshold <70-90>`: Threshold percentage (default: 80)
+- `--max-size <px>`: Downscale logos whose longest side exceeds this; never upscales. 0 disables (default: 400)
 - `--preserve-colors`: Only convert black/dark to white, keep colored parts (default: false)
 - `--help`: Show help message
 
@@ -132,6 +133,7 @@ Forces all remaining visible pixels to pure white while preserving the transpare
 - Accepts PNG, JPG/JPEG, WebP, and AVIF input formats (AVIF can be pre-decoded via [Sharp](https://sharp.pixelplumbing.com/) before ImageMagick runs when necessary)
 - Outputs crisp, clean RGBA PNG files
 - Strips metadata for smaller file sizes
+- **Auto-downscales oversized logos** to a configurable max dimension (default 400px longest side). The white conversion runs at full resolution first, then downscales — a supersampling effect that yields smoother edges. Images are never upscaled, and SVGs are untouched (they're resolution-independent).
 
 ### Preserve Colors Mode
 When **Preserve Colors** is enabled (checkbox in UI or `--preserve-colors` in CLI):
