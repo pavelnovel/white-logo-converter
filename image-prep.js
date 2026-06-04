@@ -86,6 +86,25 @@ async function prepareInputForMagick(inputPath, tempDir, execOptions) {
   return { preparedPath: tempAvifPath, cleanupFiles: [tempAvifPath] };
 }
 
+/**
+ * Reads an image's pixel dimensions using Sharp. Dimensions are informational
+ * (shown in the UI/CLI output), so any read failure resolves to null rather
+ * than throwing — a missing size readout must never fail a conversion.
+ */
+async function getImageDimensions(filePath) {
+  try {
+    const sharp = await ensureSharp();
+    const { width, height } = await sharp(filePath).metadata();
+    if (width && height) {
+      return { width, height };
+    }
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
 module.exports = {
-  prepareInputForMagick
+  prepareInputForMagick,
+  getImageDimensions
 };

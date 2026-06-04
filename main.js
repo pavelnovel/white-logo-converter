@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
-const { prepareInputForMagick } = require('./image-prep');
+const { prepareInputForMagick, getImageDimensions } = require('./image-prep');
 
 let mainWindow;
 
@@ -125,7 +125,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
   const fuzz = settings.fuzz || 8;
   const threshold = settings.threshold || 80;
   const preserveColors = settings.preserveColors || false;
-  const maxSize = settings.maxSize ?? 1000;
+  const maxSize = settings.maxSize ?? 400;
 
   const results = [];
   const execOptions = getExecOptions();
@@ -151,6 +151,8 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       const temp1 = path.join(tempDir, `${baseName}_temp1.png`);
       const temp2 = path.join(tempDir, `${baseName}_temp2.png`);
       tempFiles.push(temp1, temp2);
+
+      const originalSize = await getImageDimensions(filePath);
 
       const { preparedPath, cleanupFiles } = await prepareInputForMagick(filePath, tempDir, execOptions);
       tempFiles.push(...cleanupFiles);
@@ -199,6 +201,8 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
         });
       });
 
+      const outputSize = await getImageDimensions(outputPath);
+
       // Clean up temp files
       tempFiles.forEach(file => {
         if (fs.existsSync(file)) {
@@ -210,7 +214,7 @@ ipcMain.handle('convert-images', async (event, filePaths, settings = {}) => {
       const previewBuffer = fs.readFileSync(outputPath);
       const previewBase64 = `data:image/png;base64,${previewBuffer.toString('base64')}`;
 
-      results.push({ success: true, file: fileName, output: outputPath, preview: previewBase64 });
+      results.push({ success: true, file: fileName, output: outputPath, preview: previewBase64, originalSize, outputSize });
     } catch (error) {
       // Clean up temp files on error
       tempFiles.forEach(file => {

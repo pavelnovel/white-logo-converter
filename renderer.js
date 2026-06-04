@@ -134,7 +134,7 @@ function displayResults(conversionResults, settings) {
     li.className = result.success ? 'success' : 'error';
 
     if (result.success) {
-      li.innerHTML = `<span class="icon">✓</span> ${result.file} → output/${result.file}`;
+      li.innerHTML = `<span class="icon">✓</span> ${result.file} → output/${result.file}${formatSizeInfo(result)}`;
     } else {
       li.innerHTML = `<span class="icon">✗</span> ${result.file}: ${result.error}`;
     }
@@ -183,8 +183,31 @@ function displayPreview(conversionResults) {
 
     item.appendChild(img);
     item.appendChild(filename);
+
+    const sizeInfo = formatSizeInfo(result);
+    if (sizeInfo) {
+      const dims = document.createElement('span');
+      dims.className = 'preview-dimensions';
+      dims.innerHTML = sizeInfo.trim();
+      item.appendChild(dims);
+    }
+
     previewContainer.appendChild(item);
   });
+}
+
+function formatSizeInfo(result) {
+  const { originalSize, outputSize } = result;
+  if (!originalSize || !outputSize) {
+    return '';
+  }
+  const orig = `${originalSize.width}×${originalSize.height}`;
+  const resized = originalSize.width !== outputSize.width ||
+                  originalSize.height !== outputSize.height;
+  const text = resized
+    ? `${orig} → ${outputSize.width}×${outputSize.height} (resized)`
+    : orig;
+  return ` <span class="size-info${resized ? ' resized' : ''}">${text}</span>`;
 }
 
 function isSupportedFile(file) {

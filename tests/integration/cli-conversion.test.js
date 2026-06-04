@@ -256,7 +256,7 @@ describe('CLI Conversion Integration Tests', () => {
       return inputPath;
     }
 
-    test('downscales images larger than the default 1000px cap', () => {
+    test('downscales images larger than the default 400px cap', () => {
       const inputPath = createLargeInput('resize-default.png', 2400, 1600);
 
       try {
@@ -265,13 +265,13 @@ describe('CLI Conversion Integration Tests', () => {
           encoding: 'utf8',
         });
 
-        expect(result).toContain('Max Size=1000px');
+        expect(result).toContain('Max Size=400px');
         expect(result).toContain('Success');
 
         const { width, height } = getDimensions(path.join(OUTPUT_DIR, 'resize-default.png'));
-        expect(width).toBe(1000);
-        // Aspect ratio preserved: 2400x1600 -> 1000x667
-        expect(height).toBe(667);
+        expect(width).toBe(400);
+        // Aspect ratio preserved: 2400x1600 -> 400x267
+        expect(height).toBe(267);
       } finally {
         fs.unlinkSync(inputPath);
         cleanOutput('resize-default.png');
@@ -318,7 +318,7 @@ describe('CLI Conversion Integration Tests', () => {
     });
 
     test('never upscales images smaller than the cap', () => {
-      // Fixture is 100x100, well under the 1000px default
+      // Fixture is 100x100, well under the 400px default
       fs.copyFileSync(
         path.join(FIXTURES_DIR, 'test-logo.png'),
         path.join(INPUT_DIR, 'no-upscale.png')
@@ -339,6 +339,43 @@ describe('CLI Conversion Integration Tests', () => {
       }
     });
 
+    test('reports original and resized dimensions in output', () => {
+      const inputPath = createLargeInput('dims-report.png', 2400, 1600);
+
+      try {
+        const result = execSync('node convert-cli.js', {
+          cwd: ROOT_DIR,
+          encoding: 'utf8',
+        });
+
+        expect(result).toContain('2400×1600 → 400×267, resized');
+      } finally {
+        fs.unlinkSync(inputPath);
+        cleanOutput('dims-report.png');
+      }
+    });
+
+    test('reports unchanged dimensions when no resize occurs', () => {
+      // Fixture is 100x100, under the cap — should show size with no arrow
+      fs.copyFileSync(
+        path.join(FIXTURES_DIR, 'test-logo.png'),
+        path.join(INPUT_DIR, 'dims-unchanged.png')
+      );
+
+      try {
+        const result = execSync('node convert-cli.js', {
+          cwd: ROOT_DIR,
+          encoding: 'utf8',
+        });
+
+        expect(result).toContain('100×100');
+        expect(result).not.toContain('100×100 →');
+      } finally {
+        fs.unlinkSync(path.join(INPUT_DIR, 'dims-unchanged.png'));
+        cleanOutput('dims-unchanged.png');
+      }
+    });
+
     test('downscaling works with --preserve-colors', () => {
       const inputPath = createLargeInput('resize-preserve.png', 2400, 1600);
 
@@ -351,7 +388,7 @@ describe('CLI Conversion Integration Tests', () => {
         expect(result).toContain('Success');
 
         const { width } = getDimensions(path.join(OUTPUT_DIR, 'resize-preserve.png'));
-        expect(width).toBe(1000);
+        expect(width).toBe(400);
       } finally {
         fs.unlinkSync(inputPath);
         cleanOutput('resize-preserve.png');
